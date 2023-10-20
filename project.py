@@ -1,9 +1,16 @@
-from datetime import date
+from datetime import date, timedelta, datetime
 import csv
 from fpdf import FPDF
 
 
 def main():
+
+    actions = ["Add a new expense", "Change monthly income/salary", "Check balance", "Print out a report", "Modify a recurrent expense", "Add extra one-time income"]
+
+    #The actions are as follows: 0 - add a new expense ...
+
+    balance = int(float(get_balance()))
+    salary = int(float(get_salary()))
     
     # First, check if new user --if not compute with all recurrent expenses till day.
 
@@ -11,20 +18,45 @@ def main():
         #want to (1) compute all recurrent expenses, (2) add them to list, and (3) remove from balance. 
         print("Old user -- compute expenses so far.")
 
-
-    actions = ["Add a new expense", "Change monthly income/salary", "Check balance", "Print out a report", "Modify a recurrent expense", "Add extra one-time income"]
-
-    #The actions are as follows: 0 - add a new expense ...
-
-    balance = get_balance()
-    salary = get_salary()
-
-    #Note: Last date == date under "balance" so far
-    with open("budgeting.csv") as file:
-        last_date_used = list(csv.reader(file))[0][0]
-        
+        #Note: Last date == date under "balance" so far
+        with open("budgeting.csv") as file:
+            last_date_used = list(csv.reader(file))[0][0] #This is a sting with the date of last use
     
-    print("The last date this was used was", last_date_used)
+    
+        #print("The last date this was used was", last_date_used)
+
+        today_date = datetime.today().date()
+        start = datetime.strptime(last_date_used, "%Y-%m-%d").date()
+        end = today_date
+        # difference between current and previous date
+        delta = timedelta(days=1)
+
+        # store the DAYS of dates between lastdate and todaysdate in a list
+        dates = []
+        while start <= end:
+            dates.append(start.day)
+             # increment start date by timedelta
+            start += delta
+
+        print(f"Days of Dates between {last_date_used} and {today_date} are {dates}")
+
+
+        with open("monthlydata.csv") as file:
+            #want to iterate over stuff in monthly data // salary always 1st (to be added to balance) and all else to be subtracted
+            rowsofdata = list(csv.DictReader(file, fieldnames= ["title", "amount", "duedate"]))
+            print(rowsofdata)
+
+            for row in rowsofdata:
+                for d in dates[1:]:
+                    if int(row["duedate"]) == int(d):
+                        #print(f"account for {row}")
+                        if row["title"] == "Salary":
+                            balance += int(row["amount"])
+                        else:
+                            balance -= int(row["amount"])
+                
+    # Need to also add them to budgeting!!!! -- NOT DOING SO NOW FOR TESTING PURPOSES. 
+
 
     print("Menu:")
     for i in range(len(actions)):
@@ -140,11 +172,6 @@ def main():
 
 
 
-
-
-
-
-
 def check_new_user():
     with open("budgeting.csv") as file:
         try:    # check if user info/balance exists
@@ -159,7 +186,7 @@ def get_balance():
             balance = list(csv.reader(file))[0]
         except IndexError:
 
-            balance = input("No balance yet. Input balance: ") #get balance of new user
+            balance = input("New user. Input balance: ") #get balance of new user
             while not check_number_isvalid(balance):
                 balance = input("Please enter a valid number: ")
 
