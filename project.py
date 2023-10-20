@@ -4,12 +4,27 @@ from fpdf import FPDF
 
 
 def main():
-    actions = ["Add a new expense", "Change monthly income/salary", "Check balance", "Print out a report", "Modify a recurrent expense", "Add extra income"]
+    
+    # First, check if new user --if not compute with all recurrent expenses till day.
 
-    #The actions are as follows: 0 - add a new expense
+    if not check_new_user():
+        #want to (1) compute all recurrent expenses, (2) add them to list, and (3) remove from balance. 
+        print("Old user -- compute expenses so far.")
+
+
+    actions = ["Add a new expense", "Change monthly income/salary", "Check balance", "Print out a report", "Modify a recurrent expense", "Add extra one-time income"]
+
+    #The actions are as follows: 0 - add a new expense ...
+
     balance = get_balance()
     salary = get_salary()
 
+    #Note: Last date == date under "balance" so far
+    with open("budgeting.csv") as file:
+        last_date_used = list(csv.reader(file))[0][0]
+        
+    
+    print("The last date this was used was", last_date_used)
 
     print("Menu:")
     for i in range(len(actions)):
@@ -44,10 +59,10 @@ def main():
         title = input("Title of expense: ")
         amount = input("Amount of expense: ")
         while not check_number_isvalid(amount):
-            amount = input("Please enter a valid price: ")
+            amount = input("Please enter a valid amount: ")
 
         if ans == "yes" or ans == "y":
-            dueday = input("Due day?: ")
+            dueday = input("Monthly due day?: ")
             with open("monthlydata.csv", "a") as file:
                 csv.DictWriter(file, fieldnames = ["title", "amount","dueday"]).writerow({"title" : title.title(), "amount" : amount, "dueday" : dueday})
 
@@ -56,7 +71,7 @@ def main():
             writer = csv.DictWriter(file, fieldnames = ["date", "title", "amount"])
             writer.writerow({"date" : date.today(), "title" : title.title(), "amount" : amount})
             balance = float(balance) - float(amount)
-        # Write back in file.
+        # Write back in file.?
 
         with open("budgeting.csv", "r") as file:
             data = list(csv.DictReader(file, fieldnames = ["date", "title", "amount"]))
@@ -67,6 +82,11 @@ def main():
 
     elif actions[action - 1] == "Change monthly income/salary":
         salary = input("New amount: ")
+
+        while not check_number_isvalid(salary):
+            salary = input("Please enter a valid amount: ")
+
+
         dueday = input("Due day: ")
 
         while not check_day(dueday):
@@ -100,14 +120,22 @@ def main():
                 while modify - 1 not in range(len(data)):
                     modify = int(input("Please chose a valid number "))
                 break
-
+    
         data[i-1]["title"] = input("New title: ").title()
         data[i-1]["amount"] = input("New amount: ")
         data[i-1]["dueday"] = input("New due day: ")
 
         with open("monthlydata.csv", "w") as file:
             csv.DictWriter(file, fieldnames = ["title", "amount", "dueday"]).writerows(data)
-        ...
+        ... #??????
+
+    else: #i.e "add extra income"
+        income_title = input("Income title:")
+        amount = input("Income amount: ")
+        while not check_number_isvalid(amount):
+            amount = input("Please enter a valid amount: ")
+
+        #TODO: (1)add it to budgeting.csv -- type "income", and (2) balance ++ this amount.
 
 
 
@@ -117,9 +145,13 @@ def main():
 
 
 
-
-
-
+def check_new_user():
+    with open("budgeting.csv") as file:
+        try:    # check if user info/balance exists
+            balance = list(csv.reader(file))[0]
+        except IndexError:
+            return True
+        return False
 
 def get_balance():
     with open("budgeting.csv") as file:
@@ -127,7 +159,7 @@ def get_balance():
             balance = list(csv.reader(file))[0]
         except IndexError:
 
-            balance = input("New user. Input balance: ") #get balance of new user
+            balance = input("No balance yet. Input balance: ") #get balance of new user
             while not check_number_isvalid(balance):
                 balance = input("Please enter a valid number: ")
 
@@ -155,7 +187,7 @@ def get_salary():
             salary = list(csv.reader(file))[0]
         except IndexError:
 
-            salary = input("Input salary: ") #get salary of new user
+            salary = input("No salary yet. Input salary: ") #get salary of new user
             while not check_number_isvalid(salary):
                 salary = input("Please enter a valid number: ")
 
@@ -188,7 +220,7 @@ def print_report(filename):
     pdf.set_fill_color(27, 155, 219)
     pdf.set_text_color(255)
     for heading in ["Date", "Title", "Amount"]:
-        pdf.cell(40, 7, heading, 1, align="C", fill = True)
+        pdf.cell(50, 7, heading, 1, align="C", fill = True)
     pdf.ln()
 
     pdf.set_fill_color(224, 235, 255)
@@ -198,18 +230,13 @@ def print_report(filename):
         reader = csv.DictReader(file, fieldnames = ["date", "title", "amount"])
 
         for row in reader:
-            pdf.cell(40, 6, row["date"],1, fill = fill)
-            pdf.cell(40, 6, row["title"],1, fill = fill)
-            pdf.cell(40, 6, f"${row['amount']}",1, fill = fill)
+            pdf.cell(50, 6, row["date"],1, fill = fill)
+            pdf.cell(50, 6, row["title"],1, fill = fill)
+            pdf.cell(50, 6, f"${row['amount']}",1, fill = fill)
             pdf.ln()
             fill =  not fill
 
     pdf.output("BudgetReport.pdf")
-
-
-
-def add_income():
-    ...
 
 def check_yes_no(ans):
     if ans not in ["yes", "y", "no", "n"]:
