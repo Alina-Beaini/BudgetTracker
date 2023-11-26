@@ -9,22 +9,19 @@ def main():
 
     #The actions are as follows: 0 - add a new expense ...
 
-    balance = int(float(get_balance()))
-    salary = int(float(get_salary()))
+    balance = float(get_balance())
+    salary = float(get_salary())
     
     # First, check if new user --if not compute with all recurrent expenses till day.
 
     if not check_new_user():
         #want to (1) compute all recurrent expenses, (2) add them to list, and (3) remove from balance. 
-        print("Old user -- compute expenses so far.")
+        print("Welcome Back!")
 
         #Note: Last date == date under "balance" so far
         with open("budgeting.csv") as file:
             last_date_used = list(csv.reader(file))[0][0] #This is a sting with the date of last use
     
-    
-        #print("The last date this was used was", last_date_used)
-
         today_date = datetime.today().date()
         start = datetime.strptime(last_date_used, "%Y-%m-%d").date()
         end = today_date
@@ -38,25 +35,25 @@ def main():
              # increment start date by timedelta
             start += delta
 
-        print(f"Days of Dates between {last_date_used} and {today_date} are {dates}")
-
-
         with open("monthlydata.csv") as file:
             #want to iterate over stuff in monthly data // salary always 1st (to be added to balance) and all else to be subtracted
             rowsofdata = list(csv.DictReader(file, fieldnames= ["title", "amount", "duedate"]))
-            print(rowsofdata)
 
             for row in rowsofdata:
                 for d in dates[1:]:
                     if int(row["duedate"]) == int(d):
-                        #print(f"account for {row}")
                         if row["title"] == "Salary":
                             balance += int(row["amount"])
                         else:
                             balance -= int(row["amount"])
-                
-    # Need to also add them to budgeting!!!! -- NOT DOING SO NOW FOR TESTING PURPOSES. 
 
+        # Need to also add them to budgeting 
+        with open("budgeting.csv", "r") as file:
+            data = list(csv.DictReader(file, fieldnames = ["date", "title", "amount"]))
+            data[0]["date"] = date.today()
+            data[0]["amount"] = balance
+        with open("budgeting.csv", "w") as file:
+            csv.DictWriter(file, fieldnames=["date", "title", "amount"]).writerows(data)
 
     print("Menu:")
     for i in range(len(actions)):
@@ -70,17 +67,14 @@ def main():
             pass
         else:
             if not action - 1 in range(len(actions)):
-                print("This is not a valid action. Please chose a number from the list")
+                print("This is not a valid action. Please chose a number from the list above.")
                 continue
             else:
                 break
 
-    # The following would've been much better...
-    # to_do = {"Add a new expense" : add_expense() , "Change monthly income/salary" : change_salary(), "Check balance" : check_balance(), "Print out a report" : print_report(), "Modify a recurrent expense" : modify_expense(), "Add extra income" : add_income()}
-
     # to_do[actions[action - 1]] # apply/call corresponding function
     if actions[action - 1] == "Check balance":
-        print(f"Your balance is ${balance}")
+        print(f"Your balance is ${get_balance()}") #using get_balance() instead of balance: for future use, other actions might have taken place. 
 
     elif actions[action - 1] == "Add a new expense":
 
@@ -94,23 +88,25 @@ def main():
             amount = input("Please enter a valid amount: ")
 
         if ans == "yes" or ans == "y":
-            dueday = input("Monthly due day?: ")
+            dueday = input("Monthly due day? ")
             with open("monthlydata.csv", "a") as file:
                 csv.DictWriter(file, fieldnames = ["title", "amount","dueday"]).writerow({"title" : title.title(), "amount" : amount, "dueday" : dueday})
 
-
-        with open("budgeting.csv", "a") as file:
-            writer = csv.DictWriter(file, fieldnames = ["date", "title", "amount"])
-            writer.writerow({"date" : date.today(), "title" : title.title(), "amount" : amount})
-            balance = float(balance) - float(amount)
-        # Write back in file.?
-
-        with open("budgeting.csv", "r") as file:
-            data = list(csv.DictReader(file, fieldnames = ["date", "title", "amount"]))
-            data[0]["date"] = date.today()
-            data[0]["amount"] = balance
-        with open("budgeting.csv", "w") as file:
-            csv.DictWriter(file, fieldnames=["date", "title", "amount"]).writerows(data)
+        #only subtract if duedate today or NOT recurrent
+        
+        if ((ans == "yes" or ans == "y") and int(dueday) == today_date.day) or (ans == "no" or ans == "n"):
+            with open("budgeting.csv", "a") as file:
+                writer = csv.DictWriter(file, fieldnames = ["date", "title", "amount"])
+                writer.writerow({"date" : date.today(), "title" : title.title(), "amount" : amount})
+                balance = float(balance) - float(amount)
+                
+            # Write back in file
+            with open("budgeting.csv", "r") as file:
+                data = list(csv.DictReader(file, fieldnames = ["date", "title", "amount"]))
+                data[0]["date"] = date.today()
+                data[0]["amount"] = balance
+            with open("budgeting.csv", "w") as file:
+                csv.DictWriter(file, fieldnames=["date", "title", "amount"]).writerows(data)
 
     elif actions[action - 1] == "Change monthly income/salary":
         salary = input("New amount: ")
@@ -199,10 +195,12 @@ def get_balance():
             return balance[2]
 
 
-def check_number_isvalid(balance):
+def check_number_isvalid(amt):
     try:
-        float(balance)
+        float(amt)
     except ValueError:
+        return False
+    if float(amt) <= 0:
         return False
     return True
 #ADD FUNCTIONS: 1. CHECK AMOUNT ENTERED IS AN ACTUAL NUMBER.
@@ -266,7 +264,7 @@ def print_report(filename):
     pdf.output("BudgetReport.pdf")
 
 def check_yes_no(ans):
-    if ans not in ["yes", "y", "no", "n"]:
+    if ans.lower() not in ["yes", "y", "no", "n"]:
         return False
     else:
         return True
