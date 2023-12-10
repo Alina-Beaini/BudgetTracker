@@ -5,7 +5,7 @@ from fpdf import FPDF
 
 def main():
 
-    actions = ["Add a new expense", "Change monthly income/salary", "Check balance", "Print out a report", "Modify a recurrent expense", "Add extra one-time income"]
+    actions = ["Add a new expense", "Change monthly income/salary", "Check balance", "Print out a report"]
 
     #The actions are as follows: 0 - add a new expense ...
 
@@ -38,23 +38,23 @@ def main():
         with open("monthlydata.csv") as file:
             #want to iterate over stuff in monthly data // salary always 1st (to be added to balance) and all else to be subtracted
             rowsofdata = list(csv.DictReader(file, fieldnames= ["title", "amount", "duedate"]))
-
+            
             for row in rowsofdata:
                 for d in dates[1:]:
                     if int(row["duedate"]) == int(d):
                         if row["title"] == "Salary":
-                            balance += int(row["amount"])
+                            balance += float(row["amount"])
                         else:
-                            balance -= int(row["amount"])
+                            balance -= float(row["amount"])
+                        with open("budgeting.csv", "r") as file:
+                            data = list(csv.DictReader(file, fieldnames = ["date", "title", "amount"]))
+                            data[0]["date"] = date.today()
+                            data[0]["amount"] = balance
+                            data.append({"date": date.today(), "title": row["title"], "amount": row["amount"]}) #need to change date added. 
+                        with open("budgeting.csv", "w") as file:
+                            csv.DictWriter(file, fieldnames=["date", "title", "amount"]).writerows(data)
 
-        # Need to also add them to budgeting 
-        with open("budgeting.csv", "r") as file:
-            data = list(csv.DictReader(file, fieldnames = ["date", "title", "amount"]))
-            data[0]["date"] = date.today()
-            data[0]["amount"] = balance
-        with open("budgeting.csv", "w") as file:
-            csv.DictWriter(file, fieldnames=["date", "title", "amount"]).writerows(data)
-
+     
     print("Menu:")
     for i in range(len(actions)):
         print(i+1, actions[i])
@@ -108,6 +108,8 @@ def main():
             with open("budgeting.csv", "w") as file:
                 csv.DictWriter(file, fieldnames=["date", "title", "amount"]).writerows(data)
 
+        print(f"Your new balance is now {balance}")
+
     elif actions[action - 1] == "Change monthly income/salary":
         salary = input("New amount: ")
 
@@ -130,42 +132,6 @@ def main():
 
     elif actions[action - 1] == "Print out a report":
         print_report("budgeting.csv")
-
-    elif actions[action - 1] == "Modify a recurrent expense":
-        with open("monthlydata.csv") as file:
-            data = list(csv.DictReader(file, fieldnames = ["title", "amount", "dueday"]))
-
-        for i in range(len(data)):
-            print(i+1, data[i]["title"])
-
-        while True:
-            try:
-                modify = int(input("Which expense would you like to modify? "))
-            except ValueError:
-                print("Please enter a valid number: ")
-                pass
-            else:
-                while modify - 1 not in range(len(data)):
-                    modify = int(input("Please chose a valid number "))
-                break
-    
-        data[i-1]["title"] = input("New title: ").title()
-        data[i-1]["amount"] = input("New amount: ")
-        data[i-1]["dueday"] = input("New due day: ")
-
-        with open("monthlydata.csv", "w") as file:
-            csv.DictWriter(file, fieldnames = ["title", "amount", "dueday"]).writerows(data)
-        ... #??????
-
-    else: #i.e "add extra income"
-        income_title = input("Income title:")
-        amount = input("Income amount: ")
-        while not check_number_isvalid(amount):
-            amount = input("Please enter a valid amount: ")
-
-        #TODO: (1)add it to budgeting.csv -- type "income", and (2) balance ++ this amount.
-
-
 
 
 def check_new_user():
@@ -203,8 +169,7 @@ def check_number_isvalid(amt):
     if float(amt) <= 0:
         return False
     return True
-#ADD FUNCTIONS: 1. CHECK AMOUNT ENTERED IS AN ACTUAL NUMBER.
-#               2. WHEN ASKED NUMBERED QUESTIONS, CHECK NUMBER EXISTS.
+
 
 def get_salary():
      with open("monthlydata.csv") as file:
@@ -238,14 +203,14 @@ def print_report(filename):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font('helvetica', 'B', size = 20)
-    pdf.text(80, 30, f"Your report as of {date.today()}")
+    pdf.text(60, 30, f"Your report as of {date.today()}")
     pdf.ln(40)
 
     pdf.set_font('helvetica', size = 14)
     pdf.set_fill_color(27, 155, 219)
     pdf.set_text_color(255)
     for heading in ["Date", "Title", "Amount"]:
-        pdf.cell(50, 7, heading, 1, align="C", fill = True)
+        pdf.cell(60,8.5, heading, 1, align="C", fill = True)
     pdf.ln()
 
     pdf.set_fill_color(224, 235, 255)
@@ -255,10 +220,23 @@ def print_report(filename):
         reader = csv.DictReader(file, fieldnames = ["date", "title", "amount"])
 
         for row in reader:
-            pdf.cell(50, 6, row["date"],1, fill = fill)
-            pdf.cell(50, 6, row["title"],1, fill = fill)
-            pdf.cell(50, 6, f"${row['amount']}",1, fill = fill)
-            pdf.ln()
+            if row["title"] == "Salary":
+                pdf.cell(60, 6, row["date"],1, align="C", fill = fill)
+                pdf.cell(60, 6, row["title"],1, align="C", fill = fill)
+                pdf.cell(60, 6, f"+${row['amount']}",1, align="C", fill = fill)
+                pdf.ln()
+            elif row["title"] == "Balance":
+                pdf.cell(60, 7, row["date"],1, align="C", fill = fill)
+                pdf.cell(60, 7, row["title"],1, align="C", fill = fill)
+                pdf.cell(60, 7, f"${row['amount']}",1, align="C", fill = fill)
+                pdf.ln()
+            else:
+                pdf.cell(60, 6, row["date"],1, align="C", fill = fill)
+                pdf.cell(60, 6, row["title"],1, align="C", fill = fill)
+                pdf.set_text_color(128,0,0)
+                pdf.cell(60, 6, f"-${row['amount']}",1, align="C", fill = fill)
+                pdf.ln()
+                pdf.set_text_color(0)
             fill =  not fill
 
     pdf.output("BudgetReport.pdf")
