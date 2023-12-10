@@ -1,6 +1,5 @@
 # BudgetTracker
 
-#### Video Demo:  <https://youtu.be/YX-_n_iqJ0o>
 #### Description:
 
 BudgetTracker is a Python project designed to help users to track their expenses.
