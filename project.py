@@ -13,10 +13,9 @@ def main():
     salary = float(get_salary())
     
     # First, check if new user --if not compute with all recurrent expenses till day.
-
+   
     if not check_new_user():
-        #want to (1) compute all recurrent expenses, (2) add them to list, and (3) remove from balance. 
-        print("Welcome Back!")
+        #want to (1) compute all recurrent expenses, (2) add them to list, and (3) remove from balance.
 
         #Note: Last date == date under "balance" so far
         with open("budgeting.csv") as file:
@@ -189,10 +188,12 @@ def get_salary():
 
             with open("monthlydata.csv", "a") as writeinfile:
                 csv.DictWriter(writeinfile, fieldnames = ["title", "amount", "dueday"]).writerow({"title" : "Salary", "amount" : salary, "dueday" : dueday})  #add it to file
-
+            
+            print("Welcome!")
             return salary
 
         else:
+            print("Welcome Back!")
             return salary[1]
 
 
