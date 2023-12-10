@@ -38,4 +38,4 @@ The first row will always contain the balance and the date is always the last ti
 
 ## Authors
 
-- [@Alina-Beaini](www.linkedin.com/in/alina-beaini)
+- [@Alina-Beaini](https://www.linkedin.com/in/alina-beaini)
