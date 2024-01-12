@@ -5,6 +5,7 @@ class User:
     def __init__(self, id):
         self.id = id
         self.balance = 0
+        self.incomes = []
         
     def create(self):
         print(f"User with id {self.id} was created")
@@ -25,6 +26,14 @@ class User:
     def get_balance(self):
         return self.balance
     
+    def get_salary(self):
+        return self.balance
+    
+    def add_income(self, income):
+        self.incomes.append(income)
+        return self.incomes
+    
+
 
     
         

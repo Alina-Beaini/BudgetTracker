@@ -1,7 +1,8 @@
 from datetime import date, timedelta, datetime
 import csv
 from fpdf import FPDF
-from model.user import User
+from model.User import User
+from model.Income import Income
 
 
 def main():
@@ -10,8 +11,9 @@ def main():
 
     #The actions are as follows: 0 - add a new expense ...
 
-    balance = float(get_balance())
-    salary = float(get_salary())
+    user = create_user()
+    balance = float(get_balance(user))
+    salary = float(get_salary(user))
     
     # First, check if new user --if not compute with all recurrent expenses till day.
    
@@ -133,7 +135,15 @@ def main():
     elif actions[action - 1] == "Print out a report":
         print_report("budgeting.csv")
 
-
+def create_user():
+    if check_new_user():
+        new_user = User(1)
+        new_user.create()
+        return new_user
+    else:
+        #TODO: get user from db or excel
+        return User(2)
+    
 def check_new_user():
     with open("budgeting.csv") as file:
         try:    # check if user info/balance exists
@@ -142,24 +152,22 @@ def check_new_user():
             return True
         return False
 
-def get_balance():
+def get_balance(user):
     with open("budgeting.csv") as file:
         try:    # check if user info/balance exists
             balance = list(csv.reader(file))[0]
         except IndexError:
-            new_user = User(1)
-            new_user.create()
-
+            
             balance = input("New user. Input balance: ") #get balance of new user
             while not check_number_isvalid(balance):
                 balance = input("Please enter a valid number: ")
 
-            new_user.set_balance(balance)
+            user.set_balance(balance)
             
             return balance
 
         else:
-            return balance[2]
+            return user.get_balance()
 
 
 def check_number_isvalid(amt):
@@ -172,31 +180,32 @@ def check_number_isvalid(amt):
     return True
 
 
-def get_salary():
+def get_salary(user):
      with open("monthlydata.csv") as file:
         try:    # check if user info/salary exists
             salary = list(csv.reader(file))[0]
         except IndexError:
 
-            salary = input("No salary yet. Input salary: ") #get salary of new user
-            while not check_number_isvalid(salary):
-                salary = input("Please enter a valid number: ")
+            amount = input("No salary yet. Input salary: ") #get salary of new user
+            while not check_number_isvalid(amount):
+                amount = input("Please enter a valid number: ")
 
             dueday = input("Deposited monthly on: ")
 
             while not check_day(dueday):
                 dueday = input("Please enter a valid day of the month: ")
 
+            salary = Income(1, "salary", amount, 'USD', dueday, "salary")
 
             with open("monthlydata.csv", "a") as writeinfile:
-                csv.DictWriter(writeinfile, fieldnames = ["title", "amount", "dueday"]).writerow({"title" : "Salary", "amount" : salary, "dueday" : dueday})  #add it to file
-            
+                csv.DictWriter(writeinfile, fieldnames = ["title", "amount", "dueday"]).writerow({"title" : "Salary", "amount" : amount, "dueday" : dueday})  #add it to file
+            user.add_income(salary)
             print("Welcome!")
-            return salary
+            return salary.get_amount()
 
         else:
             print("Welcome Back!")
-            return salary[1]
+            return user.get_salary()
 
 
 
