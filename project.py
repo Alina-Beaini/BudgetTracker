@@ -1,6 +1,7 @@
 from datetime import date, timedelta, datetime
 import csv
 from fpdf import FPDF
+from model.user import User
 
 
 def main():
@@ -146,14 +147,15 @@ def get_balance():
         try:    # check if user info/balance exists
             balance = list(csv.reader(file))[0]
         except IndexError:
+            new_user = User(1)
+            new_user.create()
 
             balance = input("New user. Input balance: ") #get balance of new user
             while not check_number_isvalid(balance):
                 balance = input("Please enter a valid number: ")
 
-            with open("budgeting.csv", "a") as writeinfile:
-                csv.DictWriter(writeinfile, fieldnames = ["date", "title", "amount"]).writerow({"date" : date.today(), "title" : "Balance", "amount" : balance})  #add it to file
-
+            new_user.set_balance(balance)
+            
             return balance
 
         else:
